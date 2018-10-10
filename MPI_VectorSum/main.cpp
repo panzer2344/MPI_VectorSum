@@ -11,12 +11,15 @@
 using namespace std;
 
 int main(int argc, char* argv[]) {
-	const int VECTOR_SIZE = 10;
+	const int VECTOR_SIZE = 100000;
+	typedef unsigned long long  VectorType;
 
-	int vector[VECTOR_SIZE] = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 };
-	int *resultVector;
+	//int vector[VECTOR_SIZE] = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 };
+	
+	VectorType *vector;
+	VectorType *resultVector;
 	int size, rank;
-	int result = 0;
+	VectorType result = 0;
 
 	MPI_Status status;
 	int partVectorSize;
@@ -33,39 +36,51 @@ int main(int argc, char* argv[]) {
 	partVectorSize = VECTOR_SIZE / size;
 
 	if (rank == 0) {
+		double startTime = 0.0 , finishTime = 0.0;
+
 		time(&rawTime);
 		timeInfo = localtime(&rawTime);
 
 		strftime(timeBuffer, 80, "Now it's %I:%M%p.", timeInfo);
 		cout << timeBuffer << endl;
 
-		for (int i = 1; i < size; i++) {
-			cout << "Sending to #" << i << endl;
-			MPI_Send(&vector[(i - 1) * partVectorSize], partVectorSize, MPI_INT, i, 0, MPI_COMM_WORLD);
+		startTime = MPI_Wtime();
+
+		vector = new VectorType[VECTOR_SIZE];
+		for (VectorType i = 0; i < VECTOR_SIZE; i++) {
+			vector[i] = i;
 		}
 
 		for (int i = 1; i < size; i++) {
-			int tmp;
+			cout << "Sending to #" << i << endl;
+			MPI_Send(&vector[(i - 1) * partVectorSize], partVectorSize, MPI_UNSIGNED_LONG_LONG, i, 0, MPI_COMM_WORLD);
+		}
+
+		for (int i = 1; i < size; i++) {
+			VectorType tmp;
 			cout << "Recieving from #" << i << endl;
-			MPI_Recv(&tmp, 1, MPI_INT, MPI_ANY_SOURCE, 0, MPI_COMM_WORLD, &status);
+			MPI_Recv(&tmp, 1, MPI_UNSIGNED_LONG_LONG, MPI_ANY_SOURCE, 0, MPI_COMM_WORLD, &status);
 			result += tmp;
 		}
 
-		for (int i = (size - 1) * partVectorSize; i < VECTOR_SIZE; i++) {
+		for (VectorType i = (size - 1) * partVectorSize; i < VECTOR_SIZE; i++) {
 			result += vector[i];
 		}
 
 		cout << "result = " << result << endl;
+		
+		finishTime = MPI_Wtime();
+		cout << "time " << finishTime - startTime << endl;
 	}
 	else {
-		resultVector = new int[partVectorSize];
+		resultVector = new VectorType[partVectorSize];
 
-		MPI_Recv(resultVector, partVectorSize, MPI_INT, 0, 0, MPI_COMM_WORLD, &status);
-		for (int i = 0; i < partVectorSize; i++) {
+		MPI_Recv(resultVector, partVectorSize, MPI_UNSIGNED_LONG_LONG, 0, 0, MPI_COMM_WORLD, &status);
+		for (VectorType i = 0; i < partVectorSize; i++) {
 			result += resultVector[i];
 		}
 
-		MPI_Send(&result, 1, MPI_INT, 0, 0, MPI_COMM_WORLD);
+		MPI_Send(&result, 1, MPI_UNSIGNED_LONG_LONG, 0, 0, MPI_COMM_WORLD);
 		delete[] resultVector;
 	}
 

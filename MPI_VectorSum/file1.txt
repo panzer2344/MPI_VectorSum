@@ -1,0 +1,9 @@
+Now it's 09:47PM.
+Sending to #1
+Sending to #2
+Sending to #3
+Recieving from #1
+Recieving from #2
+Recieving from #3
+result = 4999950000
+time 0.00243029
